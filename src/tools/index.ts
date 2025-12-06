@@ -412,11 +412,11 @@ export class RobloxStudioTools {
   }
 
   // Script Management Tools
-  async getScriptSource(instancePath: string) {
+  async getScriptSource(instancePath: string, startLine?: number, endLine?: number) {
     if (!instancePath) {
       throw new Error('Instance path is required for get_script_source');
     }
-    const response = await this.client.request('/api/get-script-source', { instancePath });
+    const response = await this.client.request('/api/get-script-source', { instancePath, startLine, endLine });
     return {
       content: [
         {
@@ -432,6 +432,174 @@ export class RobloxStudioTools {
       throw new Error('Instance path and source code string are required for set_script_source');
     }
     const response = await this.client.request('/api/set-script-source', { instancePath, source });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }
+      ]
+    };
+  }
+
+  // Partial Script Editing Tools
+  async editScriptLines(instancePath: string, startLine: number, endLine: number, newContent: string) {
+    if (!instancePath || !startLine || !endLine || typeof newContent !== 'string') {
+      throw new Error('Instance path, startLine, endLine, and newContent are required for edit_script_lines');
+    }
+    const response = await this.client.request('/api/edit-script-lines', { instancePath, startLine, endLine, newContent });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }
+      ]
+    };
+  }
+
+  async insertScriptLines(instancePath: string, afterLine: number, newContent: string) {
+    if (!instancePath || typeof newContent !== 'string') {
+      throw new Error('Instance path and newContent are required for insert_script_lines');
+    }
+    const response = await this.client.request('/api/insert-script-lines', { instancePath, afterLine: afterLine || 0, newContent });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }
+      ]
+    };
+  }
+
+  async deleteScriptLines(instancePath: string, startLine: number, endLine: number) {
+    if (!instancePath || !startLine || !endLine) {
+      throw new Error('Instance path, startLine, and endLine are required for delete_script_lines');
+    }
+    const response = await this.client.request('/api/delete-script-lines', { instancePath, startLine, endLine });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }
+      ]
+    };
+  }
+
+  // Attribute Tools
+  async getAttribute(instancePath: string, attributeName: string) {
+    if (!instancePath || !attributeName) {
+      throw new Error('Instance path and attribute name are required for get_attribute');
+    }
+    const response = await this.client.request('/api/get-attribute', { instancePath, attributeName });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }
+      ]
+    };
+  }
+
+  async setAttribute(instancePath: string, attributeName: string, attributeValue: any, valueType?: string) {
+    if (!instancePath || !attributeName) {
+      throw new Error('Instance path and attribute name are required for set_attribute');
+    }
+    const response = await this.client.request('/api/set-attribute', { instancePath, attributeName, attributeValue, valueType });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }
+      ]
+    };
+  }
+
+  async getAttributes(instancePath: string) {
+    if (!instancePath) {
+      throw new Error('Instance path is required for get_attributes');
+    }
+    const response = await this.client.request('/api/get-attributes', { instancePath });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }
+      ]
+    };
+  }
+
+  async deleteAttribute(instancePath: string, attributeName: string) {
+    if (!instancePath || !attributeName) {
+      throw new Error('Instance path and attribute name are required for delete_attribute');
+    }
+    const response = await this.client.request('/api/delete-attribute', { instancePath, attributeName });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }
+      ]
+    };
+  }
+
+  // Tag Tools (CollectionService)
+  async getTags(instancePath: string) {
+    if (!instancePath) {
+      throw new Error('Instance path is required for get_tags');
+    }
+    const response = await this.client.request('/api/get-tags', { instancePath });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }
+      ]
+    };
+  }
+
+  async addTag(instancePath: string, tagName: string) {
+    if (!instancePath || !tagName) {
+      throw new Error('Instance path and tag name are required for add_tag');
+    }
+    const response = await this.client.request('/api/add-tag', { instancePath, tagName });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }
+      ]
+    };
+  }
+
+  async removeTag(instancePath: string, tagName: string) {
+    if (!instancePath || !tagName) {
+      throw new Error('Instance path and tag name are required for remove_tag');
+    }
+    const response = await this.client.request('/api/remove-tag', { instancePath, tagName });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }
+      ]
+    };
+  }
+
+  async getTagged(tagName: string) {
+    if (!tagName) {
+      throw new Error('Tag name is required for get_tagged');
+    }
+    const response = await this.client.request('/api/get-tagged', { tagName });
     return {
       content: [
         {

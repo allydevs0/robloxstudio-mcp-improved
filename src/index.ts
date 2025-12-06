@@ -37,7 +37,7 @@ class RobloxStudioMCPServer {
     this.server = new Server(
       {
         name: 'robloxstudio-mcp',
-        version: '1.6.0',
+        version: '1.7.0',
       },
       {
         capabilities: {
@@ -605,13 +605,21 @@ class RobloxStudioMCPServer {
           // Script Management Tools
           {
             name: 'get_script_source',
-            description: 'Get the source code of a script object (LocalScript, Script, or ModuleScript)',
+            description: 'Get the source code of a script object (LocalScript, Script, or ModuleScript). For large scripts (>1500 lines), use startLine/endLine to read specific sections and avoid token limits.',
             inputSchema: {
               type: 'object',
               properties: {
                 instancePath: {
                   type: 'string',
                   description: 'Path to the script instance (e.g., "game.ServerScriptService.MainScript")'
+                },
+                startLine: {
+                  type: 'number',
+                  description: 'Optional: Start line number (1-indexed). Use for reading specific sections of large scripts.'
+                },
+                endLine: {
+                  type: 'number',
+                  description: 'Optional: End line number (inclusive). Use for reading specific sections of large scripts.'
                 }
               },
               required: ['instancePath']
@@ -619,7 +627,7 @@ class RobloxStudioMCPServer {
           },
           {
             name: 'set_script_source',
-            description: 'Safely set the source code of a script object without using loadstring (Studio only)',
+            description: 'Set the entire source code of a script using ScriptEditorService:UpdateSourceAsync (works with open editors). For partial edits, prefer edit_script_lines, insert_script_lines, or delete_script_lines.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -633,6 +641,219 @@ class RobloxStudioMCPServer {
                 }
               },
               required: ['instancePath', 'source']
+            }
+          },
+          // Partial Script Editing Tools
+          {
+            name: 'edit_script_lines',
+            description: 'Replace specific lines in a script without rewriting the entire source. Ideal for making targeted changes to large scripts.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                instancePath: {
+                  type: 'string',
+                  description: 'Path to the script instance'
+                },
+                startLine: {
+                  type: 'number',
+                  description: 'First line to replace (1-indexed)'
+                },
+                endLine: {
+                  type: 'number',
+                  description: 'Last line to replace (inclusive)'
+                },
+                newContent: {
+                  type: 'string',
+                  description: 'New content to replace the specified lines (can be multiple lines)'
+                }
+              },
+              required: ['instancePath', 'startLine', 'endLine', 'newContent']
+            }
+          },
+          {
+            name: 'insert_script_lines',
+            description: 'Insert new lines into a script at a specific position without modifying existing code.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                instancePath: {
+                  type: 'string',
+                  description: 'Path to the script instance'
+                },
+                afterLine: {
+                  type: 'number',
+                  description: 'Insert after this line number (0 = insert at beginning, 1 = after first line)',
+                  default: 0
+                },
+                newContent: {
+                  type: 'string',
+                  description: 'Content to insert (can be multiple lines)'
+                }
+              },
+              required: ['instancePath', 'newContent']
+            }
+          },
+          {
+            name: 'delete_script_lines',
+            description: 'Delete specific lines from a script.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                instancePath: {
+                  type: 'string',
+                  description: 'Path to the script instance'
+                },
+                startLine: {
+                  type: 'number',
+                  description: 'First line to delete (1-indexed)'
+                },
+                endLine: {
+                  type: 'number',
+                  description: 'Last line to delete (inclusive)'
+                }
+              },
+              required: ['instancePath', 'startLine', 'endLine']
+            }
+          },
+          // Attribute Tools
+          {
+            name: 'get_attribute',
+            description: 'Get a single attribute value from an instance',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                instancePath: {
+                  type: 'string',
+                  description: 'Path to the instance'
+                },
+                attributeName: {
+                  type: 'string',
+                  description: 'Name of the attribute to get'
+                }
+              },
+              required: ['instancePath', 'attributeName']
+            }
+          },
+          {
+            name: 'set_attribute',
+            description: 'Set an attribute value on an instance. Supports string, number, boolean, Vector3, Color3, UDim2, and BrickColor.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                instancePath: {
+                  type: 'string',
+                  description: 'Path to the instance'
+                },
+                attributeName: {
+                  type: 'string',
+                  description: 'Name of the attribute to set'
+                },
+                attributeValue: {
+                  description: 'Value to set. For Vector3: {X, Y, Z}, Color3: {R, G, B}, UDim2: {X: {Scale, Offset}, Y: {Scale, Offset}}'
+                },
+                valueType: {
+                  type: 'string',
+                  description: 'Optional type hint: "Vector3", "Color3", "UDim2", "BrickColor"'
+                }
+              },
+              required: ['instancePath', 'attributeName', 'attributeValue']
+            }
+          },
+          {
+            name: 'get_attributes',
+            description: 'Get all attributes on an instance',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                instancePath: {
+                  type: 'string',
+                  description: 'Path to the instance'
+                }
+              },
+              required: ['instancePath']
+            }
+          },
+          {
+            name: 'delete_attribute',
+            description: 'Delete an attribute from an instance',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                instancePath: {
+                  type: 'string',
+                  description: 'Path to the instance'
+                },
+                attributeName: {
+                  type: 'string',
+                  description: 'Name of the attribute to delete'
+                }
+              },
+              required: ['instancePath', 'attributeName']
+            }
+          },
+          // Tag Tools (CollectionService)
+          {
+            name: 'get_tags',
+            description: 'Get all tags on an instance',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                instancePath: {
+                  type: 'string',
+                  description: 'Path to the instance'
+                }
+              },
+              required: ['instancePath']
+            }
+          },
+          {
+            name: 'add_tag',
+            description: 'Add a tag to an instance (uses CollectionService)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                instancePath: {
+                  type: 'string',
+                  description: 'Path to the instance'
+                },
+                tagName: {
+                  type: 'string',
+                  description: 'Name of the tag to add'
+                }
+              },
+              required: ['instancePath', 'tagName']
+            }
+          },
+          {
+            name: 'remove_tag',
+            description: 'Remove a tag from an instance',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                instancePath: {
+                  type: 'string',
+                  description: 'Path to the instance'
+                },
+                tagName: {
+                  type: 'string',
+                  description: 'Name of the tag to remove'
+                }
+              },
+              required: ['instancePath', 'tagName']
+            }
+          },
+          {
+            name: 'get_tagged',
+            description: 'Get all instances with a specific tag',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                tagName: {
+                  type: 'string',
+                  description: 'Name of the tag to search for'
+                }
+              },
+              required: ['tagName']
             }
           }
         ]
@@ -710,9 +931,37 @@ class RobloxStudioMCPServer {
           
           // Script Management Tools
           case 'get_script_source':
-            return await this.tools.getScriptSource((args as any)?.instancePath as string);
+            return await this.tools.getScriptSource((args as any)?.instancePath as string, (args as any)?.startLine, (args as any)?.endLine);
           case 'set_script_source':
             return await this.tools.setScriptSource((args as any)?.instancePath as string, (args as any)?.source as string);
+
+          // Partial Script Editing Tools
+          case 'edit_script_lines':
+            return await this.tools.editScriptLines((args as any)?.instancePath as string, (args as any)?.startLine as number, (args as any)?.endLine as number, (args as any)?.newContent as string);
+          case 'insert_script_lines':
+            return await this.tools.insertScriptLines((args as any)?.instancePath as string, (args as any)?.afterLine as number, (args as any)?.newContent as string);
+          case 'delete_script_lines':
+            return await this.tools.deleteScriptLines((args as any)?.instancePath as string, (args as any)?.startLine as number, (args as any)?.endLine as number);
+
+          // Attribute Tools
+          case 'get_attribute':
+            return await this.tools.getAttribute((args as any)?.instancePath as string, (args as any)?.attributeName as string);
+          case 'set_attribute':
+            return await this.tools.setAttribute((args as any)?.instancePath as string, (args as any)?.attributeName as string, (args as any)?.attributeValue, (args as any)?.valueType);
+          case 'get_attributes':
+            return await this.tools.getAttributes((args as any)?.instancePath as string);
+          case 'delete_attribute':
+            return await this.tools.deleteAttribute((args as any)?.instancePath as string, (args as any)?.attributeName as string);
+
+          // Tag Tools (CollectionService)
+          case 'get_tags':
+            return await this.tools.getTags((args as any)?.instancePath as string);
+          case 'add_tag':
+            return await this.tools.addTag((args as any)?.instancePath as string, (args as any)?.tagName as string);
+          case 'remove_tag':
+            return await this.tools.removeTag((args as any)?.instancePath as string, (args as any)?.tagName as string);
+          case 'get_tagged':
+            return await this.tools.getTagged((args as any)?.tagName as string);
 
           default:
             throw new McpError(
